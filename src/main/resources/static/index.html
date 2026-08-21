@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Harness CI/CD Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 820px; margin: 60px auto; padding: 0 20px; background: #f6f8fb; }
+    .card { background: white; padding: 36px; border-radius: 16px; box-shadow: 0 6px 24px rgba(0,0,0,.08); }
+    h1 { margin-bottom: 8px; } p { color: #586174; }
+    input, textarea { width: 100%; box-sizing: border-box; padding: 12px; margin: 6px 0 14px; border: 1px solid #ccd3df; border-radius: 8px; }
+    button { background: #222; color: white; padding: 12px 18px; border: 0; border-radius: 8px; cursor: pointer; }
+    .status { margin-top: 16px; padding: 12px; border-radius: 8px; background: #eef3f8; }
+    .links { margin-top: 18px; font-size: 14px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1 id="heading">Loading...</h1>
+  <p id="subtitle"></p>
+  <div class="status" id="status">Loading persisted configuration...</div>
+  <hr style="margin:28px 0;border:0;border-top:1px solid #eee">
+  <h2>Change the application heading</h2>
+  <p>Update this value, commit the change, build, test, scan, and redeploy it through Harness.</p>
+  <label>Heading</label>
+  <input id="newHeading" placeholder="My Harness Deployment Demo">
+  <label>Subtitle</label>
+  <textarea id="newSubtitle" rows="3" placeholder="Updated from the pipeline!"></textarea>
+  <button onclick="saveConfig()">Save configuration</button>
+  <div class="links"><a href="/actuator/health">Actuator health</a> · <a href="/actuator/info">Actuator info</a></div>
+</div>
+<script>
+async function loadConfig() {
+  const r = await fetch('/api/config');
+  const c = await r.json();
+  document.getElementById('heading').textContent = c.heading;
+  document.getElementById('subtitle').textContent = c.subtitle;
+  document.getElementById('newHeading').value = c.heading;
+  document.getElementById('newSubtitle').value = c.subtitle;
+  document.getElementById('status').textContent = 'Persisted version updated at: ' + new Date(c.updatedAt).toLocaleString();
+}
+async function saveConfig() {
+  const body = { heading: document.getElementById('newHeading').value, subtitle: document.getElementById('newSubtitle').value };
+  const r = await fetch('/api/config', { method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const data = await r.json();
+  if (!r.ok) { document.getElementById('status').textContent = data.error; return; }
+  document.getElementById('heading').textContent = data.heading;
+  document.getElementById('subtitle').textContent = data.subtitle;
+  document.getElementById('status').textContent = 'Saved. The value is stored in the persistent H2 database.';
+}
+loadConfig();
+</script>
+</body>
+</html>
