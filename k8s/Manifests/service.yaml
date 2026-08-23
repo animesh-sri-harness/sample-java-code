@@ -1,15 +1,16 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{.Values.name}}
+  name: demo-java-maven
+  namespace: {{.Values.namespace}}
   labels:
-    app: {{.Values.name}}
+    app.kubernetes.io/name: demo-java-maven
 spec:
-  type: {{.Values.serviceType}}
+  type: NodePort
+  selector:
+    app.kubernetes.io/name: demo-java-maven
   ports:
     - name: http
-      port: {{int .Values.servicePort}}
-      targetPort: {{int .Values.serviceTargetPort}}
       protocol: TCP
-  selector:
-    app: {{.Values.name}}
+      port: 9000
+      targetPort: http

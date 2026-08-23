@@ -1,18 +1,7 @@
-name: demo-java-maven
-
-# Namespace comes from the Harness infrastructure definition (sit or uat).
 namespace: <+infra.namespace>
-createNamespace: true
 
-replicas: 1
-
-# Resolved by Harness from the primary artifact source (Nexus Docker registry).
 image: <+artifact.image>
-dockercfg: <+artifact.imagePullSecret>
+imagePullSecret: <+artifact.imagePullSecret>
 
-# Spring Boot listens on 8080 and exposes /actuator/health.
-containerPort: 8080
-serviceType: NodePort
-servicePort: 8080
-serviceTargetPort: 8080
-healthPath: /actuator/health
+appEnvironment: <+env.name>
+appVersion: <+pipeline.variables.IMAGE_TAG>

@@ -1,60 +1,97 @@
-{{- if .Values.dockercfg}}
-apiVersion: v1
-kind: Secret
-metadata:
-  name: {{.Values.name}}-dockercfg
-  annotations:
-    harness.io/skip-versioning: "true"
-data:
-  .dockercfg: {{.Values.dockercfg}}
-type: kubernetes.io/dockercfg
----
-{{- end}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{.Values.name}}
+  name: demo-java-maven
+  namespace: {{.Values.namespace}}
   labels:
-    app: {{.Values.name}}
+    app.kubernetes.io/name: demo-java-maven
+    app.kubernetes.io/component: application
 spec:
-  replicas: {{int .Values.replicas}}
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
-      app: {{.Values.name}}
+      app.kubernetes.io/name: demo-java-maven
   template:
     metadata:
       labels:
-        app: {{.Values.name}}
+        app.kubernetes.io/name: demo-java-maven
+        app.kubernetes.io/component: application
     spec:
-      {{- if .Values.dockercfg}}
+      terminationGracePeriodSeconds: 30
       imagePullSecrets:
-        - name: {{.Values.name}}-dockercfg
-      {{- end}}
+        - name: nexus-aws-docker-pull-secret
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: {{.Values.name}}
+        - name: demo-java-maven
           image: {{.Values.image}}
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
-              containerPort: {{int .Values.containerPort}}
-          readinessProbe:
-            httpGet:
-              path: {{.Values.healthPath}}
-              port: {{int .Values.containerPort}}
-            initialDelaySeconds: 20
-            periodSeconds: 5
-            failureThreshold: 12
-          livenessProbe:
-            httpGet:
-              path: {{.Values.healthPath}}
-              port: {{int .Values.containerPort}}
-            initialDelaySeconds: 60
-            periodSeconds: 15
-            failureThreshold: 5
+              containerPort: 9000
+              protocol: TCP
+          env:
+            - name: SERVER_PORT
+              value: "9000"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
+            - name: APP_ENVIRONMENT
+              value: "{{.Values.appEnvironment}}"
+            - name: APP_VERSION
+              value: "{{.Values.appVersion}}"
+            # The root filesystem is read-only, so keep the H2 database on the
+            # writable /tmp volume instead of the default ./data under /app.
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:h2:file:/tmp/data/harness-demo;DB_CLOSE_DELAY=-1;AUTO_SERVER=TRUE"
           resources:
             requests:
-              cpu: 100m
-              memory: 384Mi
+              cpu: 250m
+              memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 768Mi
+              cpu: 1000m
+              memory: 512Mi
+          startupProbe:
+            httpGet:
+              path: /actuator/health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 30
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+            periodSeconds: 15
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
