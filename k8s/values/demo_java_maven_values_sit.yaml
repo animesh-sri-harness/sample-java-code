@@ -1,4 +1,4 @@
-namespace: sit
+namespace: <+infra.namespace>
 
 nexus:
   registry: ec2-47-128-77-12.ap-southeast-1.compute.amazonaws.com:8082
