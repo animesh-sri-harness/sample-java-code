@@ -1,5 +1,9 @@
 namespace: <+infra.namespace>
 
+image: <+artifact.image>
+appEnvironment: <+env.name>
+appVersion: <+artifact.tag>
+
 nexus:
   registry: ec2-47-128-77-12.ap-southeast-1.compute.amazonaws.com:8082
   username: <+secrets.getValue("account.NEXUS_USERNAME")>
