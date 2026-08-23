@@ -1,0 +1,8 @@
+.git
+.gitignore
+.DS_Store
+*.md
+k8s
+sonar-project.properties
+target/*
+!target/harness-ci-cd-demo-1.0.0.jar

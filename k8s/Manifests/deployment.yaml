@@ -1,0 +1,60 @@
+{{- if .Values.dockercfg}}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{.Values.name}}-dockercfg
+  annotations:
+    harness.io/skip-versioning: "true"
+data:
+  .dockercfg: {{.Values.dockercfg}}
+type: kubernetes.io/dockercfg
+---
+{{- end}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{.Values.name}}
+  labels:
+    app: {{.Values.name}}
+spec:
+  replicas: {{int .Values.replicas}}
+  selector:
+    matchLabels:
+      app: {{.Values.name}}
+  template:
+    metadata:
+      labels:
+        app: {{.Values.name}}
+    spec:
+      {{- if .Values.dockercfg}}
+      imagePullSecrets:
+        - name: {{.Values.name}}-dockercfg
+      {{- end}}
+      containers:
+        - name: {{.Values.name}}
+          image: {{.Values.image}}
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: {{int .Values.containerPort}}
+          readinessProbe:
+            httpGet:
+              path: {{.Values.healthPath}}
+              port: {{int .Values.containerPort}}
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            failureThreshold: 12
+          livenessProbe:
+            httpGet:
+              path: {{.Values.healthPath}}
+              port: {{int .Values.containerPort}}
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            failureThreshold: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 384Mi
+            limits:
+              cpu: 500m
+              memory: 768Mi
