@@ -1,7 +1,0 @@
-namespace: <+infra.namespace>
-
-image: <+artifact.image>
-imagePullSecret: <+artifact.imagePullSecret>
-
-appEnvironment: <+env.name>
-appVersion: <+pipeline.variables.IMAGE_TAG>

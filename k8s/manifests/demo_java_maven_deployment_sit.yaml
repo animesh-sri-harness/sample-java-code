@@ -35,7 +35,7 @@ spec:
           type: RuntimeDefault
       containers:
         - name: demo-java-maven
-          image: {{.Values.image}}
+          image: <+artifact.image>
           imagePullPolicy: Always
           ports:
             - name: http
@@ -47,9 +47,9 @@ spec:
             - name: JAVA_TOOL_OPTIONS
               value: "-XX:MaxRAMPercentage=75.0 -XX:+UseG1GC"
             - name: APP_ENVIRONMENT
-              value: "{{.Values.appEnvironment}}"
+              value: "<+env.name>"
             - name: APP_VERSION
-              value: "{{.Values.appVersion}}"
+              value: "<+artifact.tag>"
             # The root filesystem is read-only, so keep the H2 database on the
             # writable /tmp volume instead of the default ./data under /app.
             - name: SPRING_DATASOURCE_URL
